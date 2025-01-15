@@ -51,9 +51,15 @@ public class Servidor extends Thread {
         while(servidorEjecutandose){
             try{
                 clientes.add(new HiloCliente(socketServidor.accept()));
+                for(HiloCliente cliente : clientes){
+                    if(!cliente.isEjecutandose()){
+                        cliente.setEjecutandose(true);
+                        cliente.start();
+                    }
+                }
             }
             catch(IOException e){
-                
+                System.out.println("No se ha podido añadir el cliente.");
             }
         }
     }

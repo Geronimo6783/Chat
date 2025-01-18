@@ -2,10 +2,8 @@ package servidor;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.Arrays;
 import java.io.IOException;
 
 /**
@@ -19,9 +17,9 @@ public class HiloCliente extends Thread {
     private DatagramSocket socketRecepcionDatagramas;
 
     /**
-     * Socket del cliente.
+     * Socket de envío de datagramas.
      */
-    private Socket socketCliente;
+    private DatagramSocket socketEnvioDatagramas;
 
     /**
      * Indica si el hilo cliente está ejecutándose.
@@ -43,10 +41,10 @@ public class HiloCliente extends Thread {
      * @param socketCliente Socket del cliente.
      * @throws SocketException Cuando no se ha podido crear el socket para la recepción de datagramas.
      */
-    public HiloCliente(Socket socketCliente, ServerSocket socketServidor) throws SocketException{
-        this.socketCliente = socketCliente;
+    public HiloCliente(Socket socketCliente, int puertoServidor) throws SocketException{
         ejecutandose = false;
-        socketRecepcionDatagramas = new DatagramSocket(socketServidor.getLocalSocketAddress());
+        socketRecepcionDatagramas = new DatagramSocket(puertoServidor, socketCliente.getInetAddress());
+        socketEnvioDatagramas = new DatagramSocket(puertoServidor);
     }
 
     /**
@@ -67,24 +65,17 @@ public class HiloCliente extends Thread {
 
     @Override
     public void run(){
-        byte[] ip;
-        byte[] mensaje;
         DatagramPacket datagramaSalida;
 
         while(ejecutandose){
             try{
                 socketRecepcionDatagramas.receive(datagramaEntrada);
-                ip = Arrays.copyOfRange(buferDatagramas, 0, 3);
-                mensaje = Arrays.copyOfRange(buferDatagramas, 4, buferDatagramas.length);
-                if(ip.equals(socketCliente.getInetAddress().getAddress())){
-                    datagramaSalida = new DatagramPacket(mensaje, mensaje.length, socketCliente.getInetAddress(), socketCliente.getPort());
-                    socketRecepcionDatagramas.send(datagramaSalida);
-                }
+                datagramaSalida = new DatagramPacket(buferDatagramas, buferDatagramas.length, datagramaEntrada.getAddress(), 15000);
+                socketEnvioDatagramas.send(datagramaSalida);
             }
             catch(IOException e){
 
             }
-
         }
     }
 }

@@ -50,7 +50,7 @@ public class Servidor extends Thread {
     public void run(){
         while(servidorEjecutandose){
             try{
-                clientes.add(new HiloCliente(socketServidor.accept()));
+                clientes.add(new HiloCliente(socketServidor.accept(), socketServidor.getLocalPort()));
                 for(HiloCliente cliente : clientes){
                     if(!cliente.isEjecutandose()){
                         cliente.setEjecutandose(true);

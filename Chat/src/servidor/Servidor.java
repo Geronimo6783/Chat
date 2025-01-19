@@ -48,6 +48,7 @@ public class Servidor extends Thread {
      */
     @Override
     public void run(){
+        VentanaS.VentanaLog.areaLog.setText("Servidor ejecutándose...");
         while(servidorEjecutandose){
             try{
                 clientes.add(new HiloCliente(socketServidor.accept(), socketServidor.getLocalPort()));
@@ -59,6 +60,7 @@ public class Servidor extends Thread {
                 }
             }
             catch(IOException e){
+                e.printStackTrace();
                 System.out.println("No se ha podido añadir el cliente.");
             }
         }

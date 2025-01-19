@@ -2,8 +2,10 @@ package servidor;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.Arrays;
 import java.io.IOException;
 
 /**
@@ -12,29 +14,24 @@ import java.io.IOException;
 public class HiloCliente extends Thread {
 
     /**
-     * Socket de recepción de datagramas.
+     * Socket de datagramas.
      */
-    private DatagramSocket socketRecepcionDatagramas;
-
-    /**
-     * Socket de envío de datagramas.
-     */
-    private DatagramSocket socketEnvioDatagramas;
+    private static volatile DatagramSocket socketDatagramas;
 
     /**
      * Indica si el hilo cliente está ejecutándose.
      */
-    private boolean ejecutandose;
+    private volatile boolean ejecutandose;
 
     /**
      * Búfer de lectura y escritura a través de la red.
      */
-    private byte[] buferDatagramas = new byte[256];
+    private volatile byte[] buferDatagramas = new byte[256];
 
     /**
      * Gestor de paquetes de datagramas de entrada.
      */
-    private DatagramPacket datagramaEntrada = new DatagramPacket(buferDatagramas, buferDatagramas.length);
+    private final DatagramPacket datagramaEntrada = new DatagramPacket(buferDatagramas, buferDatagramas.length);
 
     /**
      * Constructor de un hilo cliente.
@@ -42,9 +39,11 @@ public class HiloCliente extends Thread {
      * @throws SocketException Cuando no se ha podido crear el socket para la recepción de datagramas.
      */
     public HiloCliente(Socket socketCliente, int puertoServidor) throws SocketException{
+        VentanaS.VentanaLog.areaLog.setText(VentanaS.VentanaLog.areaLog.getText() + "\nNuevo cliente " + socketCliente.getInetAddress().getHostAddress());;
         ejecutandose = false;
-        socketRecepcionDatagramas = new DatagramSocket(puertoServidor, socketCliente.getInetAddress());
-        socketEnvioDatagramas = new DatagramSocket(puertoServidor);
+        if(socketDatagramas == null){
+            HiloCliente.socketDatagramas = new DatagramSocket(puertoServidor);
+        }
     }
 
     /**
@@ -63,15 +62,20 @@ public class HiloCliente extends Thread {
         this.ejecutandose = ejecutandose;
     }
 
+    /**
+     * Gestiona la ejecución de un hilo que se encarga de prestar servicios de chat.
+     */
     @Override
     public void run(){
         DatagramPacket datagramaSalida;
+        byte[] ip = new byte[4];
 
         while(ejecutandose){
             try{
-                socketRecepcionDatagramas.receive(datagramaEntrada);
-                datagramaSalida = new DatagramPacket(buferDatagramas, buferDatagramas.length, datagramaEntrada.getAddress(), 15000);
-                socketEnvioDatagramas.send(datagramaSalida);
+                socketDatagramas.receive(datagramaEntrada);
+                ip = Arrays.copyOfRange(buferDatagramas, 0, 4);
+                datagramaSalida = new DatagramPacket(buferDatagramas, buferDatagramas.length, InetAddress.getByAddress(ip), 15000);
+                socketDatagramas.send(datagramaSalida);
             }
             catch(IOException e){
 

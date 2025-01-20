@@ -69,12 +69,14 @@ public class HiloCliente extends Thread {
     public void run(){
         DatagramPacket datagramaSalida;
         byte[] ip = new byte[4];
+        byte[] mensaje;
 
         while(ejecutandose){
             try{
                 socketDatagramas.receive(datagramaEntrada);
                 ip = Arrays.copyOfRange(buferDatagramas, 0, 4);
-                datagramaSalida = new DatagramPacket(buferDatagramas, buferDatagramas.length, InetAddress.getByAddress(ip), 15000);
+                mensaje = Arrays.copyOfRange(buferDatagramas, 4, buferDatagramas.length);
+                datagramaSalida = new DatagramPacket(mensaje, mensaje.length, InetAddress.getByAddress(ip), 15000);
                 socketDatagramas.send(datagramaSalida);
             }
             catch(IOException e){

@@ -22,7 +22,7 @@ public class Servidor extends Thread {
     /**
      * Clientes conectados al servidor.
      */
-    private ArrayList<HiloCliente> clientes;
+    private static ArrayList<HiloCliente> clientes;
 
     /**
      * Construtor de un servidor del servicio de chat.
@@ -32,7 +32,7 @@ public class Servidor extends Thread {
     public Servidor(int puerto) throws IOException{
         this.socketServidor = new ServerSocket(puerto);
         this.servidorEjecutandose = true;
-        this.clientes = new ArrayList<>();
+        Servidor.clientes = new ArrayList<>();
     }
 
     /**
@@ -41,6 +41,28 @@ public class Servidor extends Thread {
      */
     public void setServidorEjecutandose(boolean servidorEjecutandose){
         this.servidorEjecutandose = servidorEjecutandose;
+    }
+
+    /**
+     * Notifica a todos los cliente del nuevo cliente conectado.
+     * @param ip Dirección del nuevo cliente conectado.
+     * @param nombre Nombre del nuevo cliente conectado.
+     */
+    public static void mandarNuevaConexionCliente(byte[] ip, byte[] nombre){
+        for(HiloCliente hilo : clientes){
+            hilo.mandarNuevaConexion(ip, nombre);
+        }
+    }
+
+    /**
+     * Notifica a todos los clientes del cliente desconectado.
+     * @param ip Dirección del cliente desconectado.
+     * @param nombre Nombre del cliente desconectado.
+     */
+    public static void mandarDesconexionCliente(byte[] ip, byte[] nombre){
+        for(HiloCliente hilo : clientes){
+            hilo.mandarDesconexion(ip, nombre);
+        }
     }
 
     /**

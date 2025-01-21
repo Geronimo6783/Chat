@@ -33,7 +33,7 @@ public class VentanaS {
     }
 
     /**
-     * Clase principal del programa del servidor.
+     * Método principal del programa del chat en el entorno de servidor.
      * @param args Argumentos pasados por línea de comandos.
      */
     public static void main(String[] args) {

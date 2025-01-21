@@ -1,8 +1,11 @@
 package cliente;
 
 import java.awt.Color;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -60,9 +63,9 @@ public class VentanaC {
          * Muestra la ventana de configuración por pantalla.
          */
         public static void mostrarVentanaConfiguracion(){
-            ipServidor.setColumns(10);
-            puertoConexion.setColumns(10);
-            nombreCliente.setColumns(10);
+            ipServidor.setColumns(20);
+            puertoConexion.setColumns(20);
+            nombreCliente.setColumns(20);
 
             cancelar.setBackground(Color.WHITE);
             aceptar.setBackground(Color.WHITE);
@@ -74,17 +77,17 @@ public class VentanaC {
 
             JPanel panelIpServidor = new JPanel();
             panelIpServidor.add(new JLabel("Ip del Servidor: "));
-            panelIpServidor.add(Box.createHorizontalStrut(50));
+            panelIpServidor.add(Box.createHorizontalStrut(70));
             panelIpServidor.add(ipServidor);
 
             JPanel panelPuertoConexion = new JPanel();
             panelPuertoConexion.add(new JLabel("Puerto de la conexión: "));
-            panelPuertoConexion.add(Box.createHorizontalStrut(10));
+            panelPuertoConexion.add(Box.createHorizontalStrut(30));
             panelPuertoConexion.add(puertoConexion);
 
             JPanel panelNombreCliente = new JPanel();
             panelNombreCliente.add(new JLabel("Escriba su nombre: "));
-            panelNombreCliente.add(Box.createHorizontalStrut(30));
+            panelNombreCliente.add(Box.createHorizontalStrut(50));
             panelNombreCliente.add(nombreCliente);
 
             JPanel panelBotones = new JPanel();
@@ -101,10 +104,36 @@ public class VentanaC {
 
             cancelar.addActionListener(
                 new ActionListener() {
-                    public void actionPerformed(java.awt.event.ActionEvent e) {
-                        JOptionPane.showMessageDialog(null, "La configuración inicial de la comunicación ha sido cancelada.", "Operación cancelada", JOptionPane.INFORMATION_MESSAGE);
+                    public void actionPerformed(ActionEvent e) {
+                        JOptionPane.showMessageDialog(ventana, "La configuración inicial de la comunicación ha sido cancelada.", "Operación cancelada", JOptionPane.INFORMATION_MESSAGE);
                         ventana.dispatchEvent(new WindowEvent(ventana, WindowEvent.WINDOW_CLOSING));
                     };
+                }
+            );
+
+            aceptar.addActionListener(
+                new ActionListener() {
+                    public void actionPerformed(ActionEvent e){
+                        try{
+                            String nombre = nombreCliente.getText();
+                            if(!nombre.isEmpty()){
+                                InetAddress direccionServidor = InetAddress.getByName(ipServidor.getText());
+                                int puerto = Integer.parseInt(puertoConexion.getText());
+                                ventana.setDefaultCloseOperation(JFrame.ICONIFIED);
+                                ventana.dispatchEvent(new WindowEvent(ventana, WindowEvent.WINDOW_CLOSING));
+                                VentanaChat.mostrarVentanaChat();
+                            }
+                            else{
+                                JOptionPane.showMessageDialog(ventana, "No se ha introducido ningún nombre.", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        }
+                        catch(NumberFormatException ex){        
+                            JOptionPane.showMessageDialog(ventana, "El puerto introducido no es válido.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                        catch(UnknownHostException ex){
+                            JOptionPane.showMessageDialog(ventana, "La ip del servidor no es válida.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
                 }
             );
         }
@@ -123,7 +152,7 @@ public class VentanaC {
         /**
          * Desplegable con los clientes con los que se puede chatear.
          */
-        public static JComboBox contactosDisponibles = new JComboBox<String>();
+        public static JComboBox contactosDisponibles = new JComboBox<String>(new String[]{"                                                                                         "});
 
         /**
          * Campo de texto en el que se introduce el mensaje.
@@ -139,12 +168,44 @@ public class VentanaC {
          * Muestra la ventana del chat por pantalla.
          */
         public static void mostrarVentanaChat(){
+            enviar.setBackground(Color.WHITE);
+            contactosDisponibles.setBackground(Color.WHITE);
+            contactosDisponibles.setSize(350, 20);
+
+            textoMensaje.setColumns(30);
+
+            JPanel panelDestinatario = new JPanel();
+            JPanel panelMensaje = new JPanel();
+
+            panelDestinatario.add(new JLabel("Destinatario: "));
+            panelDestinatario.add(Box.createHorizontalStrut(5));
+            panelDestinatario.add(contactosDisponibles);
+
+            panelMensaje.add(textoMensaje);
+            panelMensaje.add(Box.createHorizontalStrut(10));
+            panelMensaje.add(enviar);
+
             JFrame ventana = new JFrame("--- 1 - " + VentanaConfiguracion.nombreCliente.getText() + "---");
-            ventana.setBounds(300, 300, 150, 250);
+            ventana.setBounds(200, 200, 450, 750);
             ventana.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
+            ventana.setLayout(new BoxLayout(ventana.getContentPane(), BoxLayout.Y_AXIS));
+            ventana.setBackground(Color.GRAY);
+
+            historialConversaciones.setEditable(false);
+            historialConversaciones.setSize(450, 550);
+            ventana.add(historialConversaciones);
+            ventana.add(panelDestinatario);
+            ventana.add(panelMensaje);
+
+            ventana.setResizable(false);
+            ventana.setVisible(true);
         }
     }
 
+    /**
+     * Método principal del porgrama de chat en el entorno cliente.
+     * @param args Argumentos pasados por línea de comandos.
+     */
     public static void main(String[] args) {
         VentanaConfiguracion.mostrarVentanaConfiguracion();
     }

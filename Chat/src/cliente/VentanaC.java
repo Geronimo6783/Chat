@@ -3,7 +3,10 @@ package cliente;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -22,6 +25,11 @@ import javax.swing.JTextField;
  * Clase que representa a la interfaz gráfica de la aplicación del cliente.
  */
 public class VentanaC {
+
+    /**
+     * Hilo cliente que se ejecuta.
+     */
+    private static Cliente cliente;
 
     /**
      * Clase que se encarga a la ventana de configuración en la que
@@ -119,9 +127,11 @@ public class VentanaC {
                             if(!nombre.isEmpty()){
                                 InetAddress direccionServidor = InetAddress.getByName(ipServidor.getText());
                                 int puerto = Integer.parseInt(puertoConexion.getText());
+                                cliente = new Cliente(direccionServidor, puerto);
                                 ventana.setDefaultCloseOperation(JFrame.ICONIFIED);
                                 ventana.dispatchEvent(new WindowEvent(ventana, WindowEvent.WINDOW_CLOSING));
                                 VentanaChat.mostrarVentanaChat();
+                                cliente.start();
                             }
                             else{
                                 JOptionPane.showMessageDialog(ventana, "No se ha introducido ningún nombre.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -165,6 +175,11 @@ public class VentanaC {
         public static JButton enviar = new JButton("Enviar");
 
         /**
+         * Ventana del chat.
+         */
+        public static JFrame ventana = new JFrame("--- 1 - " + VentanaConfiguracion.nombreCliente.getText() + " ---");
+
+        /**
          * Muestra la ventana del chat por pantalla.
          */
         public static void mostrarVentanaChat(){
@@ -185,7 +200,6 @@ public class VentanaC {
             panelMensaje.add(Box.createHorizontalStrut(10));
             panelMensaje.add(enviar);
 
-            JFrame ventana = new JFrame("--- 1 - " + VentanaConfiguracion.nombreCliente.getText() + "---");
             ventana.setBounds(200, 200, 450, 750);
             ventana.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
             ventana.setLayout(new BoxLayout(ventana.getContentPane(), BoxLayout.Y_AXIS));
@@ -199,6 +213,53 @@ public class VentanaC {
 
             ventana.setResizable(false);
             ventana.setVisible(true);
+
+            enviar.addActionListener(
+                new ActionListener() {
+                    public void actionPerformed(ActionEvent e){
+                        byte[] mensajeEnviar = textoMensaje.getText().getBytes();
+                        textoMensaje.setText(" ");
+                        cliente.buferDatagramas[0] = 2;
+                        byte[] direccionDestinatario = cliente.direccionesClientesDisponibles.get(cliente.nombreClientesDisponibles.indexOf(contactosDisponibles.getSelectedItem())).getAddress();
+
+                        for(int i = 1; i < cliente.buferDatagramas.length; i++){
+                            if(i < 5){
+                                cliente.buferDatagramas[i] = direccionDestinatario[i - 1];
+                            }
+                            else{
+                                cliente.buferDatagramas[i] = mensajeEnviar[i - 5];
+                            }
+                        }
+
+                        DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length, cliente.socketServidor.getInetAddress(), cliente.socketServidor.getPort());
+                        
+                        try{
+                            cliente.socketDatagramas.send(paqueteEnvio);
+                        }
+                        catch(IOException ex){
+                            JOptionPane.showMessageDialog(ventana, "No se ha podido enviar el mensaje.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                }
+            );
+
+            ventana.addWindowListener(
+                new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e){
+                        cliente.buferDatagramas[0] = 1;
+
+                        DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length, cliente.socketServidor.getInetAddress(), cliente.socketServidor.getPort());
+                        
+                        try{
+                            cliente.socketDatagramas.send(paqueteEnvio);
+                        }
+                        catch(IOException ex){
+
+                        }
+                    }
+                }
+            );
         }
     }
 

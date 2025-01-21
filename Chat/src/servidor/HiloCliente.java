@@ -83,11 +83,13 @@ public class HiloCliente extends Thread {
         datagramaEnviar[0] = 0;
 
         for(int i = 1; i < datagramaEnviar.length; i++){
-            if(i < 4){
+            if(i < 5){
                 datagramaEnviar[i] = ip[i - 1];
             }
             else{
-                datagramaEnviar[i] = nombre[i - 5];
+                if((i - 5) < nombre.length){
+                    datagramaEnviar[i] = nombre[i - 5];
+                }
             }
         }
         
@@ -166,11 +168,12 @@ public class HiloCliente extends Thread {
                         case 0 -> {
                             nombre = new String(Arrays.copyOfRange(buferDatagramas, 1, buferDatagramas.length));
                             VentanaS.VentanaLog.areaLog.setText(VentanaS.VentanaLog.areaLog.getText() + "\nNuevo cliente " + nombre + ".");
-                            Servidor.mandarNuevaConexionCliente(ip, nombre.getBytes());
+                            Servidor.mandarNuevaConexionCliente(socketCliente.getInetAddress().getAddress(), nombre.getBytes());
                         }
                         case 1 -> {
                             VentanaS.VentanaLog.areaLog.setText(VentanaS.VentanaLog.areaLog.getText() + "\nEl cliente " + nombre + " se ha desconectado.");
-                            Servidor.mandarDesconexionCliente(ip, nombre.getBytes());
+                            Servidor.mandarDesconexionCliente(socketCliente.getInetAddress().getAddress(), nombre.getBytes());
+                            ejecutandose = false;
                         }
                         case 2 -> {
                             ip = Arrays.copyOfRange(buferDatagramas, 1, 5);

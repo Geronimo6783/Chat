@@ -10,19 +10,24 @@ import java.util.ArrayList;
 public class Servidor extends Thread {
 
     /**
+     * Servidor del sistema del chat que se ejecuta.
+     */
+    public static volatile Servidor servidor;
+
+    /**
      * Socket del servidor.
      */
-    private ServerSocket socketServidor;
+    private final ServerSocket socketServidor;
 
     /**
      * Indica si el servidor está ejecutándose o no.
      */
-    private boolean servidorEjecutandose;
+    private volatile boolean servidorEjecutandose;
 
     /**
      * Clientes conectados al servidor.
      */
-    private static ArrayList<HiloCliente> clientes;
+    private volatile ArrayList<HiloCliente> clientes ;
 
     /**
      * Construtor de un servidor del servicio de chat.
@@ -32,7 +37,7 @@ public class Servidor extends Thread {
     public Servidor(int puerto) throws IOException{
         this.socketServidor = new ServerSocket(puerto);
         this.servidorEjecutandose = true;
-        Servidor.clientes = new ArrayList<>();
+        this.clientes = new ArrayList<>();
     }
 
     /**
@@ -48,9 +53,24 @@ public class Servidor extends Thread {
      * @param ip Dirección del nuevo cliente conectado.
      * @param nombre Nombre del nuevo cliente conectado.
      */
-    public static void mandarNuevaConexionCliente(byte[] ip, byte[] nombre){
-        for(HiloCliente hilo : clientes){
-            hilo.mandarNuevaConexion(ip, nombre);
+    public void mandarNuevaConexionCliente(byte[] ip, byte[] nombre){
+        if(clientes.size() > 1){
+            HiloCliente hiloNuevo = null;
+
+            for(HiloCliente hilo : clientes){
+                if(!hilo.getSocketCliente().getInetAddress().getAddress().equals(ip)){
+                    hilo.mandarNuevaConexion(ip, nombre);
+                }
+                else{
+                    hiloNuevo = hilo;
+                }
+            }
+
+            for(HiloCliente hilo : clientes){
+                if(!hilo.getSocketCliente().getInetAddress().getAddress().equals(ip)){
+                    hiloNuevo.mandarNuevaConexion(hilo.getSocketCliente().getInetAddress().getAddress(), hilo.getNombre().getBytes());
+                }
+            }
         }
     }
 
@@ -59,10 +79,22 @@ public class Servidor extends Thread {
      * @param ip Dirección del cliente desconectado.
      * @param nombre Nombre del cliente desconectado.
      */
-    public static void mandarDesconexionCliente(byte[] ip, byte[] nombre){
-        for(HiloCliente hilo : clientes){
-            hilo.mandarDesconexion(ip, nombre);
+    public void mandarDesconexionCliente(byte[] ip, byte[] nombre){
+        if(clientes.size() > 1){
+            for(HiloCliente hilo : clientes){
+                if(!hilo.getSocketCliente().getInetAddress().getAddress().equals(ip)){
+                    hilo.mandarDesconexion(ip, nombre);
+                }
+            }
         }
+    }
+
+    /**
+     * Permite obtener el socket del servidor.
+     * @return Socket del servidor.
+     */
+    public ServerSocket getSocketServidor() {
+        return socketServidor;
     }
 
     /**
@@ -73,7 +105,7 @@ public class Servidor extends Thread {
         VentanaS.VentanaLog.areaLog.setText("Servidor ejecutándose...");
         while(servidorEjecutandose){
             try{
-                clientes.add(new HiloCliente(socketServidor.accept(), socketServidor.getLocalPort()));
+                clientes.add(new HiloCliente(socketServidor.accept()));
                 for(HiloCliente cliente : clientes){
                     if(!cliente.isEjecutandose()){
                         cliente.setEjecutandose(true);

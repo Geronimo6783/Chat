@@ -9,8 +9,6 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import javax.swing.JComboBox;
-
 /**
  * Clase que representa a un cliente en el sistema del chat.
  */
@@ -19,37 +17,37 @@ public class Cliente extends Thread {
     /**
      * Socket del servidor.
      */
-    public Socket socketServidor;
+    public volatile Socket socketServidor;
 
     /**
      * Socket de datagramas.
      */
-    public DatagramSocket socketDatagramas;
+    public volatile DatagramSocket socketDatagramas;
 
     /**
      * Nombre de los clientes disponibles.
      */
-    public ArrayList<String> nombreClientesDisponibles = new ArrayList<>();
+    public volatile ArrayList<String> nombreClientesDisponibles = new ArrayList<>();
 
     /**
      * Direcciones de los clientes disponibles.
      */
-    public ArrayList<InetAddress> direccionesClientesDisponibles = new ArrayList<>();
+    public volatile ArrayList<InetAddress> direccionesClientesDisponibles = new ArrayList<>();
 
     /**
      * Indica si el cliente está ejecutándose.
      */
-    public boolean ejecutandose = true;
+    public volatile boolean ejecutandose = true;
 
     /**
      * Bufer de datagramas.
      */
-    public byte[] buferDatagramas = new byte[256];
+    public volatile byte[] buferDatagramas = new byte[256];
 
     /**
      * Paquete de datagramas usado para la entrada.
      */
-    public DatagramPacket datagramaEntrada = new DatagramPacket(buferDatagramas, buferDatagramas.length);
+    public volatile DatagramPacket datagramaEntrada = new DatagramPacket(buferDatagramas, buferDatagramas.length);
 
     /**
      * Constructor de clientes.
@@ -65,27 +63,12 @@ public class Cliente extends Thread {
         }
 
         try{
-            socketDatagramas = new DatagramSocket(15000);
+            socketDatagramas = new DatagramSocket();
+            socketDatagramas.connect(socketServidor.getInetAddress(), socketServidor.getPort());
         }
         catch(SocketException e){
 
         } 
-
-        buferDatagramas[0] = 0;
-        byte[] nombreCliente = VentanaC.VentanaConfiguracion.nombreCliente.getText().getBytes();
-        
-        for(int i = 0; i < nombreCliente.length; i++){
-            buferDatagramas[i + 1] = nombreCliente[i];
-        }
-
-        DatagramPacket paqueteEnvio = new DatagramPacket(buferDatagramas, buferDatagramas.length, socketServidor.getInetAddress(), socketServidor.getPort());
-        
-        try{
-            socketDatagramas.send(paqueteEnvio);
-        }
-        catch(IOException e){
-
-        }
     }
 
     /**
@@ -105,15 +88,16 @@ public class Cliente extends Thread {
 
                 switch(codigoComunicacion){
                     case 0 -> {
-                        nombreClientesDisponibles.add(new String(mensaje));
+                        String nombre = new String(mensaje);
+                        nombreClientesDisponibles.add(nombre);
                         direccionesClientesDisponibles.add(InetAddress.getByAddress(ip));
-                        VentanaC.VentanaChat.contactosDisponibles = new JComboBox<>(nombreClientesDisponibles.toArray());
+                        VentanaC.VentanaChat.contactosDisponibles.addItem(nombre);
                     }
                     case 1 -> {
                         int indice = direccionesClientesDisponibles.indexOf(InetAddress.getByAddress(ip));
-                        nombreClientesDisponibles.remove(indice);
+                        String nombreCliente = nombreClientesDisponibles.remove(indice);
                         direccionesClientesDisponibles.remove(indice);
-                        VentanaC.VentanaChat.contactosDisponibles = new JComboBox<>(nombreClientesDisponibles.toArray());
+                        VentanaC.VentanaChat.contactosDisponibles.removeItem(nombreCliente);
                     }
                     case 2 -> {
                         String nombreRemitente = nombreClientesDisponibles.get(direccionesClientesDisponibles.indexOf(InetAddress.getByAddress(ip)));

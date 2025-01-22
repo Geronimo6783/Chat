@@ -40,32 +40,32 @@ public class VentanaC {
         /**
          * Campo de texto donde se introduce la ip del servidor.
          */
-        public static JTextField ipServidor = new JTextField();
+        public static final JTextField ipServidor = new JTextField();
 
         /**
          * Campo de texto donde se introduce el puerto de conexión con el servidor.
          */
-        public static JTextField puertoConexion = new JTextField();
+        public static final JTextField puertoConexion = new JTextField();
 
         /**
          * Campo de texto donde se pone que tendrá el cliente en el chat.
          */
-        public static JTextField nombreCliente = new JTextField();
+        public static final JTextField nombreCliente = new JTextField();
 
         /**
          * Ventana de la configuración.
          */
-        public static JFrame ventana = new JFrame("Configuraciones de la comunicación");
+        public static final JFrame ventana = new JFrame("Configuraciones de la comunicación");
 
         /**
          * Botón de aceptar.
          */
-        public static JButton aceptar = new JButton("Aceptar");
+        public static final JButton aceptar = new JButton("Aceptar");
 
         /**
          * Botón de cancelar.
          */
-        public static JButton cancelar = new JButton("Cancelar");
+        public static final JButton cancelar = new JButton("Cancelar");
 
         /**
          * Muestra la ventana de configuración por pantalla.
@@ -127,11 +127,18 @@ public class VentanaC {
                             if(!nombre.isEmpty()){
                                 InetAddress direccionServidor = InetAddress.getByName(ipServidor.getText());
                                 int puerto = Integer.parseInt(puertoConexion.getText());
-                                cliente = new Cliente(direccionServidor, puerto);
-                                ventana.setDefaultCloseOperation(JFrame.ICONIFIED);
-                                ventana.dispatchEvent(new WindowEvent(ventana, WindowEvent.WINDOW_CLOSING));
-                                VentanaChat.mostrarVentanaChat();
-                                cliente.start();
+                                
+                                if(direccionServidor.isReachable(5000)){
+                                    cliente = new Cliente(direccionServidor, puerto);
+                                    ventana.setDefaultCloseOperation(JFrame.ICONIFIED);
+                                    ventana.dispatchEvent(new WindowEvent(ventana, WindowEvent.WINDOW_CLOSING));
+                                    VentanaChat.mostrarVentanaChat();
+                                    cliente.start();
+                                }
+                                else{
+                                    JOptionPane.showMessageDialog(ventana, "Conexión rehusada, error de Entrada/Salida puede que haya ingresado una ip o un puerto incorrecto, o que el servidor no esté corriendo. Esta aplicación se cerrará.", "Mensaje", JOptionPane.INFORMATION_MESSAGE);
+                                    ventana.dispatchEvent(new WindowEvent(ventana, WindowEvent.WINDOW_CLOSING));
+                                }
                             }
                             else{
                                 JOptionPane.showMessageDialog(ventana, "No se ha introducido ningún nombre.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -142,6 +149,10 @@ public class VentanaC {
                         }
                         catch(UnknownHostException ex){
                             JOptionPane.showMessageDialog(ventana, "La ip del servidor no es válida.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                        catch(Exception ex){
+                            JOptionPane.showMessageDialog(ventana, "Conexión rehusada, error de Entrada/Salida puede que haya ingresado una ip o un puerto incorrecto, o que el servidor no esté corriendo. Esta aplicación se cerrará.", "Mensaje", JOptionPane.INFORMATION_MESSAGE);
+                            ventana.dispatchEvent(new WindowEvent(ventana, WindowEvent.WINDOW_CLOSING));
                         }
                     }
                 }
@@ -157,32 +168,54 @@ public class VentanaC {
         /**
          * Área de texto en la que se muestra el historial de las conversaciones.
          */
-        public static JTextArea historialConversaciones = new JTextArea();
+        public static final JTextArea historialConversaciones = new JTextArea();
 
         /**
          * Desplegable con los clientes con los que se puede chatear.
          */
-        public static JComboBox contactosDisponibles = new JComboBox<String>(new String[]{"                                                                                         "});
+        public static final JComboBox contactosDisponibles = new JComboBox<>();
 
         /**
          * Campo de texto en el que se introduce el mensaje.
          */
-        public static JTextField textoMensaje = new JTextField();
+        public static final JTextField textoMensaje = new JTextField();
 
         /**
          * Botón de enviar mensaje.
          */
-        public static JButton enviar = new JButton("Enviar");
+        public static final JButton enviar = new JButton("Enviar");
 
         /**
          * Ventana del chat.
          */
-        public static JFrame ventana = new JFrame("--- 1 - " + VentanaConfiguracion.nombreCliente.getText() + " ---");
+        public static final JFrame ventana = new JFrame("--- 1 - " + VentanaConfiguracion.nombreCliente.getText() + " ---");
 
         /**
          * Muestra la ventana del chat por pantalla.
          */
         public static void mostrarVentanaChat(){
+            try{
+                cliente.buferDatagramas[0] = 0;
+                byte[] nombreCliente = VentanaC.VentanaConfiguracion.nombreCliente.getText().getBytes();
+                
+                for(int i = 0; i < nombreCliente.length; i++){
+                    cliente.buferDatagramas[i + 1] = nombreCliente[i];
+                }
+    
+                DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length, cliente.socketServidor.getInetAddress(), cliente.socketServidor.getPort());
+                
+                try{
+                    cliente.socketDatagramas.send(paqueteEnvio);
+                }
+                catch(IOException e){
+    
+                }
+            }
+            catch(Exception e){
+                JOptionPane.showMessageDialog(VentanaC.VentanaConfiguracion.ventana, "Conexión rehusada, error de Entrada/Salida puede que haya ingresado una ip o un puerto incorrecto, o que el servidor no esté corriendo. Esta aplicación se cerrará.", "Mensaje", JOptionPane.INFORMATION_MESSAGE);
+                VentanaC.VentanaConfiguracion.ventana.dispatchEvent(new WindowEvent(VentanaC.VentanaConfiguracion.ventana, WindowEvent.WINDOW_CLOSING));
+            }
+
             enviar.setBackground(Color.WHITE);
             contactosDisponibles.setBackground(Color.WHITE);
             contactosDisponibles.setSize(350, 20);
@@ -217,27 +250,32 @@ public class VentanaC {
             enviar.addActionListener(
                 new ActionListener() {
                     public void actionPerformed(ActionEvent e){
-                        byte[] mensajeEnviar = textoMensaje.getText().getBytes();
-                        textoMensaje.setText(" ");
-                        cliente.buferDatagramas[0] = 2;
-                        byte[] direccionDestinatario = cliente.direccionesClientesDisponibles.get(cliente.nombreClientesDisponibles.indexOf(contactosDisponibles.getSelectedItem())).getAddress();
+                        if(contactosDisponibles.getSelectedItem() != null){
+                            byte[] mensajeEnviar = textoMensaje.getText().getBytes();
+                            textoMensaje.setText(" ");
+                            cliente.buferDatagramas[0] = 2;
+                            byte[] direccionDestinatario = cliente.direccionesClientesDisponibles.get(cliente.nombreClientesDisponibles.indexOf(contactosDisponibles.getSelectedItem())).getAddress();
 
-                        for(int i = 1; i < cliente.buferDatagramas.length; i++){
-                            if(i < 5){
-                                cliente.buferDatagramas[i] = direccionDestinatario[i - 1];
+                            for(int i = 1; i < cliente.buferDatagramas.length; i++){
+                                if(i < 5){
+                                    cliente.buferDatagramas[i] = direccionDestinatario[i - 1];
+                                }
+                                else{
+                                    cliente.buferDatagramas[i] = mensajeEnviar[i - 5];
+                                }
                             }
-                            else{
-                                cliente.buferDatagramas[i] = mensajeEnviar[i - 5];
+
+                            DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length, cliente.socketServidor.getInetAddress(), cliente.socketServidor.getPort());
+                            
+                            try{
+                                cliente.socketDatagramas.send(paqueteEnvio);
+                            }
+                            catch(IOException ex){
+                                JOptionPane.showMessageDialog(ventana, "No se ha podido enviar el mensaje.", "Error", JOptionPane.ERROR_MESSAGE);
                             }
                         }
-
-                        DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length, cliente.socketServidor.getInetAddress(), cliente.socketServidor.getPort());
-                        
-                        try{
-                            cliente.socketDatagramas.send(paqueteEnvio);
-                        }
-                        catch(IOException ex){
-                            JOptionPane.showMessageDialog(ventana, "No se ha podido enviar el mensaje.", "Error", JOptionPane.ERROR_MESSAGE);
+                        else{
+                            JOptionPane.showMessageDialog(panelMensaje, "Debe escoger un destinatario válido, si no hay uno, espere a que otro usuario se conecte para poder chatear con él.", "Mensaje", JOptionPane.INFORMATION_MESSAGE);
                         }
                     }
                 }

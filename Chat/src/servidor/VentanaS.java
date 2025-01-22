@@ -17,7 +17,7 @@ public class VentanaS {
         /**
          * Área de texto donde se escribe el log del servidor.
          */
-        public static JTextArea areaLog = new JTextArea();
+        public static final JTextArea areaLog = new JTextArea();
 
         /**
          * Muestra la ventana que muestra el log del servidor.
@@ -33,7 +33,7 @@ public class VentanaS {
     }
 
     /**
-     * Clase principal del programa del servidor.
+     * Método principal del programa del chat en el entorno de servidor.
      * @param args Argumentos pasados por línea de comandos.
      */
     public static void main(String[] args) {
@@ -41,7 +41,8 @@ public class VentanaS {
         
         try{
             if(puerto != null){
-                new Servidor(Integer.parseInt(puerto)).start();
+                Servidor.servidor = new Servidor(Integer.parseInt(puerto));
+                Servidor.servidor.start();
                 VentanaLog.mostrarVentanaLog();
             }
             else{

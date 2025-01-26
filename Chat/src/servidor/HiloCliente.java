@@ -14,9 +14,9 @@ import java.io.IOException;
 public class HiloCliente extends Thread {
 
     /**
-     * Socket de datagramas.
+     * Socket de datagramas con los clientes.
      */
-    private final DatagramSocket socketDatagramas;
+    private DatagramSocket socketDatagramas;
 
     /**
      * Socket del cliente.
@@ -36,7 +36,7 @@ public class HiloCliente extends Thread {
     /**
      * Búfer de lectura y escritura a través de la red.
      */
-    private volatile byte[] buferDatagramas = new byte[65535];
+    private volatile byte[] buferDatagramas = new byte[1024];
 
     /**
      * Gestor de paquetes de datagramas de entrada.
@@ -56,8 +56,18 @@ public class HiloCliente extends Thread {
     public HiloCliente(Socket socketCliente) throws SocketException{
         this.socketCliente = socketCliente;
         ejecutandose = false;
-        this.socketDatagramas = new DatagramSocket(Servidor.servidor.getSocketServidor().getLocalPort());
-        this.socketDatagramas.connect(socketCliente.getInetAddress(), socketCliente.getPort());
+        this.socketDatagramas = new DatagramSocket();
+        this.socketDatagramas.connect(socketCliente.getLocalSocketAddress());
+
+        byte[] puerto = Integer.toString(this.socketDatagramas.getLocalPort()).getBytes();
+        DatagramPacket paquetePuerto = new DatagramPacket(puerto, puerto.length);
+
+        try{
+            this.socketDatagramas.send(paquetePuerto);
+        }
+        catch(IOException e){
+
+        }
     }
 
     /**
@@ -70,7 +80,7 @@ public class HiloCliente extends Thread {
 
     /**
      * Permite establecer si el hilo cliente está ejecutándose.
-     * @param ejecutandose Valor a establecer de si el hilo cliente está ejecutándose o no.l
+     * @param ejecutandose Valor a establecer de si el hilo cliente está ejecutándose o no.
      */
     public void setEjecutandose(boolean ejecutandose) {
         this.ejecutandose = ejecutandose;
@@ -98,8 +108,8 @@ public class HiloCliente extends Thread {
                 }
             }
             
-            datagramaSalida = new DatagramPacket(datagramaEnviar, datagramaEnviar.length, socketCliente.getLocalAddress(), socketCliente.getLocalPort());
-            
+            datagramaSalida = new DatagramPacket(datagramaEnviar, datagramaEnviar.length);
+
             try{
                 socketDatagramas.send(datagramaSalida);
             }
@@ -170,36 +180,38 @@ public class HiloCliente extends Thread {
         while(ejecutandose){
             try{
                 socketDatagramas.receive(datagramaEntrada);
-                        codigoComunicacion = buferDatagramas[0];
-                        switch(codigoComunicacion){
-                            case 0 -> {
-                                nombre = new String(Arrays.copyOfRange(buferDatagramas, 1, buferDatagramas.length));
-                                VentanaS.VentanaLog.areaLog.setText(VentanaS.VentanaLog.areaLog.getText() + "\nNuevo cliente " + nombre + ".");
-                                Servidor.servidor.mandarNuevaConexionCliente(socketCliente.getInetAddress().getAddress(), nombre.getBytes());
-                            }
-                            case 1 -> {
-                                VentanaS.VentanaLog.areaLog.setText(VentanaS.VentanaLog.areaLog.getText() + "\nEl cliente " + nombre + " se ha desconectado.");
-                                Servidor.servidor.mandarDesconexionCliente(socketCliente.getInetAddress().getAddress(), nombre.getBytes());
-                                ejecutandose = false;
-                            }
-                            case 2 -> {
-                                ip = Arrays.copyOfRange(buferDatagramas, 1, 5);
-                                mensaje = Arrays.copyOfRange(buferDatagramas, 5, buferDatagramas.length);
-                                datagramaEnviar = new byte[mensaje.length + 5];
-                                datagramaEnviar[0] = 2;
-
-                                for(int i = 1; i < datagramaEnviar.length; i++){
-                                    if(i < 4){
-                                        datagramaEnviar[i] = socketCliente.getInetAddress().getAddress()[i - 1];
-                                    }
-                                    else{
-                                        datagramaEnviar[i] = mensaje[i - 5];
-                                    }
-                                }
-                                datagramaSalida = new DatagramPacket(datagramaEnviar, datagramaEnviar.length, InetAddress.getByAddress(ip), socketCliente.getLocalPort());
-                                socketDatagramas.send(datagramaSalida);
-                            }
+                if(datagramaEntrada.getAddress().equals(socketCliente.getInetAddress())){
+                    codigoComunicacion = buferDatagramas[0];
+                    switch(codigoComunicacion){
+                        case 0 -> {
+                            nombre = new String(Arrays.copyOfRange(buferDatagramas, 1, buferDatagramas.length));
+                            VentanaS.VentanaLog.areaLog.setText(VentanaS.VentanaLog.areaLog.getText() + "\nNuevo cliente " + nombre + ".");
+                            Servidor.servidor.mandarNuevaConexionCliente(socketCliente.getInetAddress().getAddress(), nombre.getBytes());
                         }
+                        case 1 -> {
+                            VentanaS.VentanaLog.areaLog.setText(VentanaS.VentanaLog.areaLog.getText() + "\nEl cliente " + nombre + " se ha desconectado.");
+                            Servidor.servidor.mandarDesconexionCliente(socketCliente.getInetAddress().getAddress(), nombre.getBytes());
+                            ejecutandose = false;
+                        }
+                        case 2 -> {
+                            ip = Arrays.copyOfRange(buferDatagramas, 1, 5);
+                            mensaje = Arrays.copyOfRange(buferDatagramas, 5, buferDatagramas.length);
+                            datagramaEnviar = new byte[mensaje.length + 5];
+                            datagramaEnviar[0] = 2;
+
+                            for(int i = 1; i < datagramaEnviar.length; i++){
+                                if(i < 5){
+                                    datagramaEnviar[i] = socketCliente.getInetAddress().getAddress()[i - 1];
+                                }
+                                else{
+                                    datagramaEnviar[i] = mensaje[i - 5];
+                                }
+                            }
+                            datagramaSalida = new DatagramPacket(datagramaEnviar, datagramaEnviar.length, InetAddress.getByAddress(ip), 15000);
+                            socketDatagramas.send(datagramaSalida);
+                        }
+                    }
+                }
             }
             catch(IOException e){
                 VentanaS.VentanaLog.areaLog.setText(VentanaS.VentanaLog.areaLog.getText() + "\nNo se ha podido recibir el paquete de " + nombre + " (" + socketCliente.getLocalAddress().getHostAddress() + ")");

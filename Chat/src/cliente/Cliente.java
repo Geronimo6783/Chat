@@ -17,12 +17,12 @@ public class Cliente extends Thread {
     /**
      * Socket del servidor.
      */
-    public volatile Socket socketServidor;
+    public Socket socketServidor;
 
     /**
      * Socket de datagramas.
      */
-    public volatile DatagramSocket socketDatagramas;
+    public DatagramSocket socketDatagramas;
 
     /**
      * Nombre de los clientes disponibles.
@@ -42,7 +42,7 @@ public class Cliente extends Thread {
     /**
      * Bufer de datagramas.
      */
-    public volatile byte[] buferDatagramas = new byte[256];
+    public volatile byte[] buferDatagramas = new byte[1024];
 
     /**
      * Paquete de datagramas usado para la entrada.
@@ -64,11 +64,15 @@ public class Cliente extends Thread {
 
         try{
             socketDatagramas = new DatagramSocket();
-            socketDatagramas.connect(socketServidor.getInetAddress(), socketServidor.getPort());
+            socketDatagramas.receive(datagramaEntrada);
+            socketDatagramas.connect(ipServidor, Integer.parseInt(new String(buferDatagramas)));
         }
         catch(SocketException e){
 
         } 
+        catch(IOException e){
+            
+        }
     }
 
     /**

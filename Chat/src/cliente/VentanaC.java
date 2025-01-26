@@ -132,8 +132,8 @@ public class VentanaC {
                                     cliente = new Cliente(direccionServidor, puerto);
                                     ventana.setDefaultCloseOperation(JFrame.ICONIFIED);
                                     ventana.dispatchEvent(new WindowEvent(ventana, WindowEvent.WINDOW_CLOSING));
-                                    VentanaChat.mostrarVentanaChat();
                                     cliente.start();
+                                    VentanaChat.mostrarVentanaChat();
                                 }
                                 else{
                                     JOptionPane.showMessageDialog(ventana, "Conexión rehusada, error de Entrada/Salida puede que haya ingresado una ip o un puerto incorrecto, o que el servidor no esté corriendo. Esta aplicación se cerrará.", "Mensaje", JOptionPane.INFORMATION_MESSAGE);
@@ -202,13 +202,13 @@ public class VentanaC {
                     cliente.buferDatagramas[i + 1] = nombreCliente[i];
                 }
     
-                DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length, cliente.socketServidor.getInetAddress(), cliente.socketServidor.getPort());
-                
+                DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length);
+
                 try{
                     cliente.socketDatagramas.send(paqueteEnvio);
                 }
                 catch(IOException e){
-    
+
                 }
             }
             catch(Exception e){
@@ -265,7 +265,7 @@ public class VentanaC {
                                 }
                             }
 
-                            DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length, cliente.socketServidor.getInetAddress(), cliente.socketServidor.getPort());
+                            DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length);
                             
                             try{
                                 cliente.socketDatagramas.send(paqueteEnvio);
@@ -287,7 +287,7 @@ public class VentanaC {
                     public void windowClosing(WindowEvent e){
                         cliente.buferDatagramas[0] = 1;
 
-                        DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length, cliente.socketServidor.getInetAddress(), cliente.socketServidor.getPort());
+                        DatagramPacket paqueteEnvio = new DatagramPacket(cliente.buferDatagramas, cliente.buferDatagramas.length);
                         
                         try{
                             cliente.socketDatagramas.send(paqueteEnvio);
@@ -295,6 +295,8 @@ public class VentanaC {
                         catch(IOException ex){
 
                         }
+
+                        cliente.ejecutandose = false;
                     }
                 }
             );

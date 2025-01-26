@@ -3,6 +3,8 @@ package servidor;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 /**
  * Clase que representa a la interfaz gráfica de la aplicación del servidor.
@@ -29,6 +31,16 @@ public class VentanaS {
             areaLog.setEditable(false);
             ventana.add(areaLog);
             ventana.setVisible(true);
+            ventana.addWindowListener(new WindowAdapter(){
+            
+                /**
+                 * Gestiona el evento de la ventana cuando esta se está cerrando.
+                 */
+                @Override
+                public void windowClosing(WindowEvent e){
+                    Servidor.servidor.setServidorEjecutandose(false);
+                }   
+            });
         }
     }
 
